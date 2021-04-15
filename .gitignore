@@ -10,3 +10,6 @@ Build/
 # Verify
 # https://github.com/VerifyTests/Verify#received-and-verified
 *.received.*
+
+# JetBrains Rider
+.idea/
