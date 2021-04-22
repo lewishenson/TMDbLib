@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 using TMDbLib.Objects.Authentication;
 using TMDbLib.Objects.General;
 using TMDbLib.Objects.TvShows;
-using TMDbLib.Utilities.Serializer;
 using TMDbLibTests.Helpers;
 using TMDbLibTests.JsonHelpers;
 using Xunit;
@@ -13,17 +12,20 @@ namespace TMDbLibTests.UtilityTests
     public class AccountStateConverterTest : TestBase
     {
         [Fact]
-        public void AccountStateConverter_WithData()
+        public void DeserializeAccountState_WithRatedData()
         {
-            // { "rated": { "value": 5 } }
+            // {"favorite":true,"id":100,"rated":{"value":5},"watchlist":true}
 
             var original = new
             {
-                rated = new { value = 5 }
+                favorite = true,
+                id = 100,
+                rated = new { value = 5 },
+                watchlist = true
             };
 
-            string json = Serializer.SerializeToString(original);
-            AccountState result = Serializer.DeserializeFromString<AccountState>(json);
+            string json = Serializer.Serialize(original);
+            AccountState result = Serializer.Deserialize<AccountState>(json);
 
             Verify(new
             {
@@ -33,14 +35,20 @@ namespace TMDbLibTests.UtilityTests
         }
 
         [Fact]
-        public void AccountStateConverter_WithoutData()
+        public void DeserializeAccountState_WithoutRatedData()
         {
-            // { "rated": false }
+            // {"favorite":true,"id":100,"rated":{"value":5},"watchlist":true}
 
-            var original = new { rated = false };
+            var original = new
+            {
+                favorite = true,
+                id = 100,
+                rated = false,
+                watchlist = true
+            };
 
-            string json = Serializer.SerializeToString(original);
-            AccountState result = Serializer.DeserializeFromString<AccountState>(json);
+            string json = Serializer.Serialize(original);
+            AccountState result = Serializer.Deserialize<AccountState>(json);
 
             Verify(new
             {

@@ -1,0 +1,9 @@
+{
+  json: {"favorite":true,"id":100,"rated":{"value":5},"watchlist":true},
+  result: {
+    favorite: true,
+    id: 100,
+    rating: 5.0,
+    watchlist: true
+  }
+}

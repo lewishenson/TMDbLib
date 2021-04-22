@@ -45,7 +45,7 @@ namespace TMDbLib.Rest
         {
             using Stream content = await GetContent().ConfigureAwait(false);
 
-            return _client.Serializer.Deserialize<T>(content);
+            return _client.Serializer.ObsoleteDeserialize<T>(content);
         }
     }
 }

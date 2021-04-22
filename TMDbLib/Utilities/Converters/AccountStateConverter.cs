@@ -1,73 +1,85 @@
 using System;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using TMDbLib.Objects.General;
-using TMDbLib.Objects.TvShows;
 
 namespace TMDbLib.Utilities.Converters
 {
-    internal class AccountStateConverter : JsonConverter
+    internal class AccountStateConverter : JsonConverter<AccountState>
     {
-        public override bool CanConvert(Type objectType)
+        public override AccountState Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            return objectType == typeof(AccountState) ||
-                    objectType == typeof(TvAccountState) ||
-                    objectType == typeof(TvEpisodeAccountState) ||
-                    objectType == typeof(TvEpisodeAccountStateWithNumber);
-        }
-
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
-        {
-            JObject jObject = JObject.Load(reader);
-
-            // Sometimes the AccountState.Rated is an object with a value in it
-            // In these instances, convert it from:
-            //  "rated": { "value": 5 }
-            //  "rated": False
-            // To:
-            //  "rating": 5
-            //  "rating": null
-
-            JToken obj = jObject["rated"];
-            if (obj.Type == JTokenType.Boolean)
+            if (reader.TokenType != JsonTokenType.StartObject)
             {
-                // It's "False", so the rating is not set
-                jObject.Remove("rated");
-                jObject.Add("rating", null);
-            }
-            else if (obj.Type == JTokenType.Object)
-            {
-                // Read out the value
-                double rating = obj["value"].ToObject<double>();
-                jObject.Remove("rated");
-                jObject.Add("rating", rating);
+                throw new JsonException();
             }
 
-            object result = Activator.CreateInstance(objectType);
+            AccountState accountState = new AccountState();
 
-            // Populate the result
-            serializer.Populate(jObject.CreateReader(), result);
+            while (reader.Read())
+            {
+                if (reader.TokenType == JsonTokenType.EndObject && reader.CurrentDepth == 0)
+                {
+                    return accountState;
+                }
 
-            return result;
+                if (reader.TokenType == JsonTokenType.PropertyName)
+                {
+                    string propertyName = reader.GetString();
+                    reader.Read();
+
+                    switch (propertyName)
+                    {
+                        case "favorite":
+                            accountState.Favorite = reader.GetBoolean();
+                            break;
+
+                        case "id":
+                            accountState.Id = reader.GetInt32();
+                            break;
+
+                        // Sometimes the AccountState.Rated is an object with a value in it
+                        // In these instances, convert it from:
+                        //  "rated": { "value": 5 }
+                        //  "rated": False
+                        // To:
+                        //  "rating": 5
+                        //  "rating": null
+                        case "value":
+                            accountState.Rating = reader.GetDouble();
+                            break;
+
+                        case "watchlist":
+                            accountState.Watchlist = reader.GetBoolean();
+                            break;
+                    }
+                }
+            }
+
+            throw new JsonException("Invalid JSON, unable to convert to T.");
         }
 
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        public override void Write(Utf8JsonWriter writer, AccountState value, JsonSerializerOptions options)
         {
-            JObject jToken = JObject.FromObject(value);
+            writer.WriteStartObject();
 
-            JValue obj = (JValue)jToken["rating"];
-            jToken.Remove("rating");
+            writer.WriteBoolean("Favorite", value.Favorite);
+            writer.WriteNumber("Id", value.Id);
 
-            if (obj.Value == null)
+            if (value.Rating is not { })
             {
-                jToken["rated"] = null;
+                writer.WriteNull("Rating");
             }
             else
             {
-                jToken["rated"] = JToken.FromObject(new { value = obj });
+                writer.WriteStartObject("Rating");
+                writer.WriteNumber("Value", value.Rating.Value);
+                writer.WriteEndObject();
             }
 
-            jToken.WriteTo(writer);
+            writer.WriteBoolean("Watchlist", value.Watchlist);
+
+            writer.WriteEndObject();
         }
     }
 }

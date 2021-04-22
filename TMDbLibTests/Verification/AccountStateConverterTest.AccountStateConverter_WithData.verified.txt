@@ -1,6 +1,0 @@
-{
-  json: {"rated":{"value":5}},
-  result: {
-    rating: 5.0
-  }
-}
